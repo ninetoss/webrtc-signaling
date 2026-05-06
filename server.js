@@ -20,6 +20,12 @@ io.on('connection', (socket) => {
             signal: data.signal
         });
     });
+    socket.on('disconnect', () => {
+        socket.to('admin').emit('signal', {
+            from: socket.id,
+            signal: { type: 'disconnect' }
+        });
+    });
 });
 
 const port = process.env.PORT || 3000;
