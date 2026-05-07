@@ -29,7 +29,6 @@ io.use((socket, next) => {
 });
 
 io.on('connection', (socket) => {
-    console.log(`✅ User connected: ${socket.user.username} (ID: ${socket.user.userId})`);
 
     socket.on('join', (role) => {
         socket.join(role); 
@@ -37,10 +36,7 @@ io.on('connection', (socket) => {
 
     socket.on('signal', (data) => {
         const senderId = socket.user.userId || socket.id;
-        
-        // 🌟 THE FIX: Read the NUMBER securely from the JWT data
-        // Fallback to username or senderId if the number is missing in the database
-        const shipNumber = socket.user.number || socket.user.username || senderId;
+        const shipNumber = socket.user.username || senderId;
 
         socket.to(data.to).emit('signal', {
             from: senderId,
@@ -51,7 +47,7 @@ io.on('connection', (socket) => {
 
     socket.on('disconnect', () => {
         const senderId = socket.user.userId || socket.id;
-        const shipNumber = socket.user.number || socket.user.username || senderId;
+        const shipNumber = socket.user.username || senderId;
         
         socket.to('admin').emit('signal', {
             from: senderId,
