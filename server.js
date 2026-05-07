@@ -29,6 +29,7 @@ io.use((socket, next) => {
 });
 
 io.on('connection', (socket) => {
+    console.log(`✅ User connected: ${socket.user.username} (ID: ${socket.user.userId})`);
 
     socket.on('join', (role) => {
         socket.join(role); 
