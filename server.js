@@ -36,20 +36,20 @@ io.on('connection', (socket) => {
 
     socket.on('signal', (data) => {
         const senderId = socket.user.userId || socket.id;
-        const senderName = socket.user.username;
+
         socket.to(data.to).emit('signal', {
             from: senderId,
-            senderName: senderName,
+            senderName: socket.user.username,
             signal: data.signal
         });
     });
 
     socket.on('disconnect', () => {
         const senderId = socket.user.userId || socket.id;
-        const senderName = socket.user.username;
+        
         socket.to('admin').emit('signal', {
             from: senderId,
-            senderName: senderName, 
+            senderName: socket.user.username, 
             signal: { type: 'disconnect' }
         });
     });
