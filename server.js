@@ -39,16 +39,17 @@ io.on('connection', (socket) => {
         const senderName = socket.user.username;
         socket.to(data.to).emit('signal', {
             from: senderId,
-            senderName: data.senderName,
+            senderName: senderName,
             signal: data.signal
         });
     });
 
     socket.on('disconnect', () => {
         const senderId = socket.user.userId || socket.id;
+        const senderName = socket.user.username;
         socket.to('admin').emit('signal', {
             from: senderId,
-            senderName: socket.user.username, 
+            senderName: senderName, 
             signal: { type: 'disconnect' }
         });
     });
