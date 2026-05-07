@@ -32,22 +32,24 @@ io.on('connection', (socket) => {
 
     socket.on('signal', (data) => {
         const senderId = socket.user.userId || socket.id;
+        
+        // 🌟 THE FIX: Get the Ship's real username straight from the JWT
+        const realShipName = socket.user.username || senderId;
 
         socket.to(data.to).emit('signal', {
             from: senderId,
-            senderName: data.senderName, // <-- NEW: Relay the name passed from the mobile device
+            senderName: realShipName, // Send the real ship's name to the Admin
             signal: data.signal
         });
     });
 
     socket.on('disconnect', () => {
         const senderId = socket.user.userId || socket.id;
-        console.log(`❌ User disconnected: ID ${senderId}`);
+        const realShipName = socket.user.username || `Vessel ${senderId}`;
         
         socket.to('admin').emit('signal', {
             from: senderId,
-            // Fallback to the JWT username if the app closes unexpectedly and can't send a name
-            senderName: socket.user.username || `Vessel ${senderId}`, 
+            senderName: realShipName, 
             signal: { type: 'disconnect' }
         });
     });
