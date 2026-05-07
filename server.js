@@ -35,21 +35,21 @@ io.on('connection', (socket) => {
     });
 
     socket.on('signal', (data) => {
+        // IMPROVEMENT: We now pass the ACTUAL database ID to the Admin, not a random socket ID!
         const senderId = socket.user.userId || socket.id;
 
         socket.to(data.to).emit('signal', {
             from: senderId,
-            senderName: data.senderName,
             signal: data.signal
         });
     });
 
     socket.on('disconnect', () => {
         const senderId = socket.user.userId || socket.id;
+        console.log(`❌ User disconnected: ID ${senderId}`);
         
         socket.to('admin').emit('signal', {
             from: senderId,
-            senderName: socket.user.username, 
             signal: { type: 'disconnect' }
         });
     });
