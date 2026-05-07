@@ -24,6 +24,7 @@ io.use((socket, next) => {
 });
 
 io.on('connection', (socket) => {
+    console.log(`✅ User connected: ${socket.user.username} (ID: ${socket.user.userId})`);
 
     socket.on('join', (role) => {
         socket.join(role); 
@@ -34,15 +35,19 @@ io.on('connection', (socket) => {
 
         socket.to(data.to).emit('signal', {
             from: senderId,
+            senderName: data.senderName, // <-- NEW: Relay the name passed from the mobile device
             signal: data.signal
         });
     });
 
     socket.on('disconnect', () => {
         const senderId = socket.user.userId || socket.id;
+        console.log(`❌ User disconnected: ID ${senderId}`);
         
         socket.to('admin').emit('signal', {
             from: senderId,
+            // Fallback to the JWT username if the app closes unexpectedly and can't send a name
+            senderName: socket.user.username || `Vessel ${senderId}`, 
             signal: { type: 'disconnect' }
         });
     });
