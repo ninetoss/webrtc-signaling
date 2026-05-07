@@ -2,11 +2,15 @@ const express = require('express');
 const http = require('http'); 
 const { Server } = require('socket.io');
 const jwt = require("jsonwebtoken"); // NEW: Import JWT
+
 const app = express();
 const server = http.createServer(app); 
 const io = new Server(server, { cors: { origin: "*" } });
+
+// !!! IMPORTANT: This MUST match the key used in your PHP login script !!!
 const SECRET_KEY = 'YOUR_SUPER_SECRET_KEY_CHANGE_THIS';
 
+// --- NEW: JWT Authentication Middleware ---
 io.use((socket, next) => {
     const token = socket.handshake.auth.token;
 
@@ -18,6 +22,7 @@ io.use((socket, next) => {
         if (err) {
             return next(new Error("Authentication error: Forged or expired token"));
         }
+        // Attach the decrypted database info to the connection
         socket.user = decoded.data; 
         next();
     });
@@ -33,27 +38,28 @@ io.on('connection', (socket) => {
     socket.on('signal', (data) => {
         const senderId = socket.user.userId || socket.id;
         
-        // 🌟 THE FIX: Get the Ship's real username straight from the JWT
-        const realShipName = socket.user.username || senderId;
+        // 🌟 THE FIX: Read the NUMBER securely from the JWT data
+        // Fallback to username or senderId if the number is missing in the database
+        const shipNumber = socket.user.number || socket.user.username || senderId;
 
         socket.to(data.to).emit('signal', {
             from: senderId,
-            senderName: realShipName, // Send the real ship's name to the Admin
+            senderName: shipNumber, // We keep the variable key the same so the frontend doesn't break
             signal: data.signal
         });
     });
 
     socket.on('disconnect', () => {
         const senderId = socket.user.userId || socket.id;
-        const realShipName = socket.user.username || `Vessel ${senderId}`;
+        const shipNumber = socket.user.number || socket.user.username || senderId;
         
         socket.to('admin').emit('signal', {
             from: senderId,
-            senderName: realShipName, 
+            senderName: shipNumber, 
             signal: { type: 'disconnect' }
         });
     });
 });
 
 const port = process.env.PORT || 3000;
-server.listen(port, '0.0.0.0');
+server.listen(port, '0.0.0.0', () => console.log(`🚀 Secure Signaling Server running on port ${port}`));
