@@ -39,7 +39,7 @@ io.on('connection', (socket) => {
 
         socket.to(data.to).emit('signal', {
             from: senderId,
-            senderName: socket.user.username,
+            senderName: data.senderName,
             signal: data.signal
         });
     });
