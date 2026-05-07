@@ -36,21 +36,32 @@ io.on('connection', (socket) => {
     });
 
     socket.on('signal', (data) => {
-        // IMPROVEMENT: We now pass the ACTUAL database ID to the Admin, not a random socket ID!
         const senderId = socket.user.userId || socket.id;
+        const shipName = socket.user.name || socket.user.username;
+        const shipNumber = socket.user.number || "";
 
+        // 🌟 Send ALL identifiers so the Admin dashboard can link them properly
         socket.to(data.to).emit('signal', {
             from: senderId,
+            senderName: shipName || shipNumber || senderId, 
+            shipName: shipName,
+            shipNumber: shipNumber,
             signal: data.signal
         });
     });
 
     socket.on('disconnect', () => {
         const senderId = socket.user.userId || socket.id;
+        const shipName = socket.user.name || socket.user.username;
+        const shipNumber = socket.user.number || "";
+        
         console.log(`❌ User disconnected: ID ${senderId}`);
         
         socket.to('admin').emit('signal', {
             from: senderId,
+            senderName: shipName || shipNumber || senderId,
+            shipName: shipName,
+            shipNumber: shipNumber,
             signal: { type: 'disconnect' }
         });
     });
