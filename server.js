@@ -15,21 +15,24 @@ io.on('connection', (socket) => {
         userData = { ...userData, ...socket.handshake.auth };
     }
 
-    console.log(`✅ Connected: ${userData.name || userData.username || socket.id}`);
+    console.log(`✅ Connected: ${userData.name || userData.username || socket.id} (Network ID: ${socket.id})`);
 
     socket.on('join', (role) => {
         socket.join(role); 
     });
 
     socket.on('signal', (data) => {
-        const senderId = userData.userId || socket.id;
+        // 🌟 THE FIX: We MUST use the network's socket.id as the return address.
+        // If we use the Android userId, the Admin's video reply gets lost in the mail!
+        const networkReturnAddress = socket.id; 
+        
         const shipName = userData.name || userData.username || "";
         const shipNumber = userData.number || "";
 
-        // 3. Relay the exact Ship Number to the Admin map
+        // 3. Relay the exact Ship Number to the Admin map alongside the safe return address
         socket.to(data.to).emit('signal', {
-            from: senderId,
-            senderName: shipName || shipNumber || senderId, 
+            from: networkReturnAddress, // <--- This guarantees the video connects
+            senderName: shipName || shipNumber || networkReturnAddress, 
             shipName: shipName,
             shipNumber: shipNumber,
             signal: data.signal
@@ -37,15 +40,15 @@ io.on('connection', (socket) => {
     });
 
     socket.on('disconnect', () => {
-        const senderId = userData.userId || socket.id;
+        const networkReturnAddress = socket.id;
         const shipName = userData.name || userData.username || "";
         const shipNumber = userData.number || "";
         
-        console.log(`❌ Disconnected: ID ${senderId}`);
+        console.log(`❌ Disconnected: Network ID ${networkReturnAddress}`);
         
         socket.to('admin').emit('signal', {
-            from: senderId,
-            senderName: shipName || shipNumber || senderId,
+            from: networkReturnAddress,
+            senderName: shipName || shipNumber || networkReturnAddress,
             shipName: shipName,
             shipNumber: shipNumber,
             signal: { type: 'disconnect' }
