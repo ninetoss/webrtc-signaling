@@ -1,31 +1,21 @@
 const express = require('express');
 const http = require('http'); 
 const { Server } = require('socket.io');
-const jwt = require("jsonwebtoken"); // Kept only to read the Android data, not for security
 
 const app = express();
 const server = http.createServer(app); 
 const io = new Server(server, { cors: { origin: "*" } });
 
-// 🌟 THE FIX: The io.use() authentication block has been completely removed.
-// The server will no longer reject any connections.
-
 io.on('connection', (socket) => {
-    // 1. Extract user data without verifying any encryption keys
-    let userData = { userId: socket.id, name: "Unknown", number: "" };
+    // 1. Setup fallback data
+    let userData = { userId: socket.id, name: "", number: "", username: "" };
 
-    if (socket.handshake.auth.token) {
-        // Blindly decode the Android token just to read the ship's name
-        const decoded = jwt.decode(socket.handshake.auth.token);
-        if (decoded && decoded.data) {
-            userData = decoded.data;
-        }
-    } else if (socket.handshake.auth.userId) {
-        // Accept unencrypted plain text from the Admin dashboard
-        userData = socket.handshake.auth;
+    // 2. Read the unencrypted data from Android or Admin Dashboard
+    if (socket.handshake.auth) {
+        userData = { ...userData, ...socket.handshake.auth };
     }
 
-    console.log(`✅ Connected: ${userData.name || userData.username} (ID: ${userData.userId || socket.id})`);
+    console.log(`✅ Connected: ${userData.name || userData.username || socket.id}`);
 
     socket.on('join', (role) => {
         socket.join(role); 
@@ -33,9 +23,10 @@ io.on('connection', (socket) => {
 
     socket.on('signal', (data) => {
         const senderId = userData.userId || socket.id;
-        const shipName = userData.name || userData.username;
+        const shipName = userData.name || userData.username || "";
         const shipNumber = userData.number || "";
 
+        // 3. Relay the exact Ship Number to the Admin map
         socket.to(data.to).emit('signal', {
             from: senderId,
             senderName: shipName || shipNumber || senderId, 
@@ -47,7 +38,7 @@ io.on('connection', (socket) => {
 
     socket.on('disconnect', () => {
         const senderId = userData.userId || socket.id;
-        const shipName = userData.name || userData.username;
+        const shipName = userData.name || userData.username || "";
         const shipNumber = userData.number || "";
         
         console.log(`❌ Disconnected: ID ${senderId}`);
