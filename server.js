@@ -18,6 +18,12 @@ io.use((socket, next) => {
         return next(new Error("Authentication error: No token provided"));
     }
 
+    // 🌟 THE FIX: Allow the Web Administrator Dashboard to bypass the Android JWT
+    if (token === 'ADMIN_WEB_DASHBOARD_PASSKEY_12345') {
+        socket.user = { userId: 'admin', username: 'Administrator', role: 'admin' };
+        return next();
+    }
+
     jwt.verify(token, SECRET_KEY, (err, decoded) => {
         if (err) {
             return next(new Error("Authentication error: Forged or expired token"));
