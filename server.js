@@ -21,23 +21,6 @@ io.on('connection', (socket) => {
         socket.join(role); 
     });
 
-    // ── BROADCAST: Admin sends audio to all mobiles + other admins ──────────
-    socket.on('broadcast', (data) => {
-        // Relay to every socket in the 'mobile' room
-        socket.to('mobile').emit('signal', {
-            from: socket.id,
-            isBroadcast: true,
-            signal: data.signal
-        });
-        // Also relay to other admins (e.g. leaflet_map_server.html instances)
-        socket.to('admin').emit('signal', {
-            from: socket.id,
-            isBroadcast: true,
-            signal: data.signal
-        });
-    });
-    // ─────────────────────────────────────────────────────────────────────────
-
     socket.on('signal', (data) => {
         // 🌟 THE FIX: We MUST use the network's socket.id as the return address.
         // If we use the Android userId, the Admin's video reply gets lost in the mail!
@@ -46,12 +29,35 @@ io.on('connection', (socket) => {
         const shipName = userData.name || userData.username || "";
         const shipNumber = userData.number || "";
 
-        // 3. Relay the exact Ship Number to the Admin map alongside the safe return address
-        socket.to(data.to).emit('signal', {
+        // 3. Relay the exact Ship Number to the Admin map alongside the safe return address.
+        //    Also forward isBroadcast flag if present, so clients can route the signal correctly.
+        const outgoing = {
             from: networkReturnAddress, // <--- This guarantees the video connects
             senderName: shipName || shipNumber || networkReturnAddress, 
             shipName: shipName,
             shipNumber: shipNumber,
+            signal: data.signal
+        };
+        if (data.isBroadcast) outgoing.isBroadcast = true;
+
+        socket.to(data.to).emit('signal', outgoing);
+    });
+
+    // FIX (Bug 4): Handle the 'broadcast' room event emitted by the admin.
+    // Previously this event was fired but never handled, so it did nothing.
+    // Now it relays the admin's broadcast signal (with isBroadcast:true) to every
+    // mobile client at once, including those who connected after the broadcast started.
+    socket.on('broadcast', (data) => {
+        const networkReturnAddress = socket.id;
+        const shipName = userData.name || userData.username || "";
+        const shipNumber = userData.number || "";
+
+        socket.to('mobile').emit('signal', {
+            from: networkReturnAddress,
+            senderName: shipName || shipNumber || networkReturnAddress,
+            shipName: shipName,
+            shipNumber: shipNumber,
+            isBroadcast: true,
             signal: data.signal
         });
     });
