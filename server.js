@@ -21,6 +21,23 @@ io.on('connection', (socket) => {
         socket.join(role); 
     });
 
+    // ── BROADCAST: Admin sends audio to all mobiles + other admins ──────────
+    socket.on('broadcast', (data) => {
+        // Relay to every socket in the 'mobile' room
+        socket.to('mobile').emit('signal', {
+            from: socket.id,
+            isBroadcast: true,
+            signal: data.signal
+        });
+        // Also relay to other admins (e.g. leaflet_map_server.html instances)
+        socket.to('admin').emit('signal', {
+            from: socket.id,
+            isBroadcast: true,
+            signal: data.signal
+        });
+    });
+    // ─────────────────────────────────────────────────────────────────────────
+
     socket.on('signal', (data) => {
         // 🌟 THE FIX: We MUST use the network's socket.id as the return address.
         // If we use the Android userId, the Admin's video reply gets lost in the mail!
