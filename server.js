@@ -39,28 +39,6 @@ io.on('connection', (socket) => {
         });
     });
 
-    socket.on('admin-joined', (data) => {
-        socket.to('mobile').emit('request-reoffer', { adminId: socket.id });
-        for (const [id, sock] of io.of('/').sockets) {
-            if (sock.rooms.has('mobile') && sock.isStreaming) {
-                socket.emit('mobile-active', {
-                    socketId: id,
-                    shipName: sock.authData?.name || '',
-                    shipNumber: sock.authData?.number || ''
-                });
-            }
-        }
-    });
-
-    socket.on('start-streaming', () => {
-        socket.isStreaming = true;
-        socket.to('admin').emit('mobile-active', {
-            socketId: socket.id,
-            shipName: socket.authData?.name || '',
-            shipNumber: socket.authData?.number || ''
-        });
-    });
-
     socket.on('disconnect', () => {
         const networkReturnAddress = socket.id;
         const shipName = userData.name || userData.username || "";
